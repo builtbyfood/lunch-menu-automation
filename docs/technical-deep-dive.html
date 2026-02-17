@@ -1,0 +1,1450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Technical Deep Dive: Reverse Engineering School Portal Authentication</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            color: #2c3e50;
+            border-bottom: 4px solid #3498db;
+            padding-bottom: 15px;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+
+        h2 {
+            color: #2980b9;
+            margin-top: 40px;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+            border-left: 5px solid #3498db;
+            padding-left: 15px;
+        }
+
+        h3 {
+            color: #16a085;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            font-size: 1.4em;
+        }
+
+        h4 {
+            color: #34495e;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            font-size: 1.2em;
+        }
+
+        p {
+            margin-bottom: 15px;
+        }
+
+        .intro {
+            background: #ecf0f1;
+            padding: 20px;
+            border-radius: 5px;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+
+        .section {
+            margin-bottom: 40px;
+        }
+
+        .step {
+            background: #f8f9fa;
+            border-left: 4px solid #3498db;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+
+        .step-number {
+            display: inline-block;
+            background: #3498db;
+            color: white;
+            width: 35px;
+            height: 35px;
+            line-height: 35px;
+            text-align: center;
+            border-radius: 50%;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        code {
+            background: #2c3e50;
+            color: #f8f9fa;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+
+        pre {
+            background: #2c3e50;
+            color: #f8f9fa;
+            padding: 20px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            line-height: 1.5;
+        }
+
+        .code-label {
+            background: #e74c3c;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 3px 3px 0 0;
+            font-weight: bold;
+            font-size: 0.85em;
+            display: inline-block;
+            margin-bottom: -5px;
+        }
+
+        .tip {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+
+        .tip:before {
+            content: "💡 TIP: ";
+            font-weight: bold;
+            color: #155724;
+        }
+
+        .warning {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+
+        .warning:before {
+            content: "⚠️ WARNING: ";
+            font-weight: bold;
+            color: #856404;
+        }
+
+        .important {
+            background: #f8d7da;
+            border-left: 4px solid #dc3545;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+
+        .important:before {
+            content: "🔴 IMPORTANT: ";
+            font-weight: bold;
+            color: #721c24;
+        }
+
+        .success {
+            background: #d1ecf1;
+            border-left: 4px solid #17a2b8;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+
+        .success:before {
+            content: "✅ SUCCESS: ";
+            font-weight: bold;
+            color: #0c5460;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: white;
+        }
+
+        th {
+            background: #3498db;
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: bold;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        tr:hover {
+            background: #f8f9fa;
+        }
+
+        .screenshot-placeholder {
+            background: #ecf0f1;
+            border: 2px dashed #95a5a6;
+            padding: 40px;
+            text-align: center;
+            margin: 20px 0;
+            border-radius: 5px;
+            color: #7f8c8d;
+            font-style: italic;
+        }
+
+        ul, ol {
+            margin-left: 30px;
+            margin-bottom: 15px;
+        }
+
+        li {
+            margin-bottom: 8px;
+        }
+
+        .key-info {
+            background: #e8f4f8;
+            border: 2px solid #3498db;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+
+        .key-info-title {
+            font-weight: bold;
+            color: #2980b9;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+
+        .button {
+            display: inline-block;
+            background: #3498db;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            text-decoration: none;
+            margin: 5px;
+        }
+
+        .button:hover {
+            background: #2980b9;
+        }
+
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+            .container {
+                box-shadow: none;
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Technical Deep Dive: Reverse Engineering School Portal Authentication</h1>
+
+        <div class="intro">
+            <p><strong>Document Purpose:</strong> This comprehensive guide walks through the complete process of reverse-engineering a web application's authentication flow using browser developer tools. We'll cover every step from initial inspection to final automation.</p>
+            
+            <p><strong>Tools Used:</strong></p>
+            <ul>
+                <li>Google Chrome DevTools (Network tab, Elements tab, Console)</li>
+                <li>Node-RED for automation</li>
+                <li>Home Assistant for integration</li>
+                <li>wget for reliable file downloads</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h2>Part 1: Initial Reconnaissance</h2>
+
+            <div class="step">
+                <h3><span class="step-number">1</span>Open Browser Developer Tools</h3>
+                <p>First, we need to see what's happening behind the scenes when logging into the portal.</p>
+                
+                <h4>Instructions:</h4>
+                <ol>
+                    <li>Open the school portal login page in Google Chrome</li>
+                    <li>Press <code>F12</code> or <code>Ctrl+Shift+I</code> (Windows/Linux) or <code>Cmd+Option+I</code> (Mac)</li>
+                    <li>Click the <strong>Network</strong> tab at the top</li>
+                    <li>✅ Check the <strong>Preserve log</strong> checkbox (very important!)</li>
+                </ol>
+
+                <div class="screenshot-placeholder">
+                    [Screenshot: Chrome DevTools with Network tab open, Preserve log checked]
+                </div>
+
+                <div class="tip">
+                    When you submit a login form, the page often redirects. Without "Preserve log" enabled, you'll lose all the network requests and won't be able to see what happened!
+                </div>
+            </div>
+
+            <div class="step">
+                <h3><span class="step-number">2</span>Inspect the Login Form Fields</h3>
+                <p>Before we submit anything, let's identify what data the form expects.</p>
+                
+                <h4>Finding the Email/Username Field:</h4>
+                <ol>
+                    <li>Right-click on the <strong>email/username input field</strong> on the login page</li>
+                    <li>Select <strong>Inspect</strong> (or <strong>Inspect Element</strong>)</li>
+                    <li>The Elements tab will open and highlight the input field</li>
+                </ol>
+
+                <div class="screenshot-placeholder">
+                    [Screenshot: Right-click menu showing "Inspect" option on login field]
+                </div>
+
+                <h4>What We Found:</h4>
+                <div class="code-label">HTML</div>
+                <pre>&lt;input type="email" 
+       name="session[email]" 
+       id="user_email" 
+       class="form-control" 
+       placeholder="Email address"&gt;</pre>
+
+                <div class="key-info">
+                    <div class="key-info-title">Key Information Extracted:</div>
+                    <ul>
+                        <li><code>name="session[email]"</code> - This is the field name we need to submit in our POST request</li>
+                        <li><code>type="email"</code> - HTML5 email validation</li>
+                        <li><code>id="user_email"</code> - Could be used for automation/testing</li>
+                    </ul>
+                </div>
+
+                <h4>Finding the Password Field:</h4>
+                <p>Repeat the same process for the password field:</p>
+                
+                <div class="code-label">HTML</div>
+                <pre>&lt;input type="password" 
+       name="session[password]" 
+       id="user_password" 
+       class="form-control"
+       placeholder="Password"&gt;</pre>
+
+                <div class="key-info">
+                    <div class="key-info-title">Key Information:</div>
+                    <ul>
+                        <li><code>name="session[password]"</code> - Field name for password submission</li>
+                        <li><code>type="password"</code> - Input is masked (dots/asterisks)</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="step">
+                <h3><span class="step-number">3</span>Discover the CSRF Token</h3>
+                <p>Most modern web applications use CSRF (Cross-Site Request Forgery) tokens to prevent malicious login attempts. This is a critical security feature we need to handle.</p>
+                
+                <h4>Finding the Token:</h4>
+                <ol>
+                    <li>In the Elements tab (still open from previous step), press <code>Ctrl+F</code> to open the search box</li>
+                    <li>Search for: <code>authenticity_token</code></li>
+                    <li>Find the hidden input field containing the token</li>
+                </ol>
+
+                <div class="screenshot-placeholder">
+                    [Screenshot: Elements tab with search box showing "authenticity_token" results]
+                </div>
+
+                <h4>What We Discovered:</h4>
+                <div class="code-label">HTML</div>
+                <pre>&lt;input type="hidden" 
+       name="authenticity_token" 
+       value="Ey_Gn3uE2ZBQ8EmyAFAMqP7vK9XcT2mLp8HgJdWk7Qs="&gt;</pre>
+
+                <div class="important">
+                    This token is CRITICAL! Every login attempt needs this token, and it changes on every page load. We MUST extract this value before attempting to log in.
+                </div>
+
+                <h4>Why This Matters:</h4>
+                <ul>
+                    <li>The token proves we loaded the real login page from the server</li>
+                    <li>It prevents automated attacks from external websites</li>
+                    <li>It's tied to your current session</li>
+                    <li>It expires quickly (usually within minutes)</li>
+                </ul>
+
+                <h4>Verify It Changes:</h4>
+                <ol>
+                    <li>Note the current token value</li>
+                    <li>Refresh the page (press <code>F5</code>)</li>
+                    <li>Inspect the form again</li>
+                    <li>Compare - the token should be completely different!</li>
+                </ol>
+
+                <div class="tip">
+                    Copy the token value to a text editor temporarily so you can compare it after refresh. This confirms the token is dynamic and must be extracted fresh for each login attempt.
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Part 2: Watching the Login Process Live</h2>
+
+            <div class="step">
+                <h3><span class="step-number">4</span>Prepare to Capture the Login Request</h3>
+                <p>Now let's see what happens when we actually submit our credentials.</p>
+                
+                <h4>Setup:</h4>
+                <ol>
+                    <li>Switch back to the <strong>Network</strong> tab in DevTools</li>
+                    <li>Click the <strong>Clear</strong> button (🚫 circle icon) to remove old requests</li>
+                    <li>Verify <strong>Preserve log</strong> is still checked ✅</li>
+                    <li>Keep DevTools open and visible</li>
+                </ol>
+
+                <div class="screenshot-placeholder">
+                    [Screenshot: Network tab cleared, Preserve log checked, ready to capture]
+                </div>
+
+                <h4>Execute Login:</h4>
+                <ol>
+                    <li>Enter your credentials in the login form</li>
+                    <li>Click the <strong>Sign In</strong> button</li>
+                    <li>Watch the Network tab fill up with HTTP requests in real-time!</li>
+                </ol>
+
+                <div class="tip">
+                    Don't close DevTools! If you close it, you'll lose all the captured network traffic. Keep it open throughout the entire login process.
+                </div>
+            </div>
+
+            <div class="step">
+                <h3><span class="step-number">5</span>Identify the Critical Login Request</h3>
+                <p>The Network tab now shows all HTTP requests. Let's find the one that actually performs the login.</p>
+                
+                <h4>What to Look For:</h4>
+                <ul>
+                    <li><strong>Method:</strong> POST (shown in red/pink color or "POST" text)</li>
+                    <li><strong>Name:</strong> Usually contains <code>sessions</code>, <code>sign_in</code>, <code>auth</code>, or <code>login</code></li>
+                    <li><strong>Status:</strong> 302 (redirect) or 200 (success)</li>
+                    <li><strong>Type:</strong> document</li>
+                </ul>
+
+                <div class="screenshot-placeholder">
+                    [Screenshot: Network tab with POST /sessions request highlighted, showing 302 status]
+                </div>
+
+                <h4>In Our Case, We Found:</h4>
+                <table>
+                    <tr>
+                        <th>Property</th>
+                        <th>Value</th>
+                        <th>Meaning</th>
+                    </tr>
+                    <tr>
+                        <td>Name</td>
+                        <td>sessions</td>
+                        <td>The login endpoint</td>
+                    </tr>
+                    <tr>
+                        <td>Method</td>
+                        <td>POST</td>
+                        <td>Sending data to server</td>
+                    </tr>
+                    <tr>
+                        <td>Status</td>
+                        <td>302 (Found)</td>
+                        <td>Redirect = Login succeeded!</td>
+                    </tr>
+                    <tr>
+                        <td>Type</td>
+                        <td>document</td>
+                        <td>HTML response</td>
+                    </tr>
+                </table>
+
+                <div class="success">
+                    The 302 status code is exactly what we want! It means we're being redirected after login, which typically indicates successful authentication.
+                </div>
+            </div>
+
+            <div class="step">
+                <h3><span class="step-number">6</span>Examine Request Headers in Detail</h3>
+                <p>Click on the POST /sessions request to open the details panel.</p>
+                
+                <h4>Click on the <strong>Headers</strong> tab to see:</h4>
+
+                <div class="screenshot-placeholder">
+                    [Screenshot: Headers tab showing Request URL, Request Method, Request Headers]
+                </div>
+
+                <h4>Request Headers Section:</h4>
+                <div class="code-label">HTTP Request</div>
+                <pre>POST https://your-school-portal.com/sessions HTTP/1.1
+Host: your-school-portal.com
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 213
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+Cookie: ps_s=eWJhc2U2NGVuY29kZWRkYXRh...
+Referer: https://your-school-portal.com/signin
+Origin: https://your-school-portal.com</pre>
+
+                <div class="key-info">
+                    <div class="key-info-title">Critical Header Observations:</div>
+                    <ul>
+                        <li><strong>Content-Type:</strong> <code>application/x-www-form-urlencoded</code> - Tells us the POST data format (like HTML form submission)</li>
+                        <li><strong>Cookie:</strong> The signin page set a cookie (<code>ps_s</code>), and we're sending it back with our login request</li>
+                        <li><strong>User-Agent:</strong> Full browser identification string - some servers check this!</li>
+                        <li><strong>Referer:</strong> Shows we came from the signin page (security check)</li>
+                        <li><strong>Origin:</strong> Prevents CSRF attacks from other domains</li>
+                    </ul>
+                </div>
+
+                <div class="warning">
+                    Many modern web applications will reject requests with missing or suspicious headers. We need to replicate ALL of these headers in our automated requests!
+                </div>
+            </div>
+
+            <div class="step">
+                <h3><span class="step-number">7</span>Inspect Form Data Payload</h3>
+                <p>Scroll down in the Headers tab to find the <strong>Request Payload</strong> or <strong>Form Data</strong> section.</p>
+                
+                <div class="screenshot-placeholder">
+                    [Screenshot: Form Data section showing all submitted fields]
+                </div>
+
+                <h4>What We See Being Sent:</h4>
+                <div class="code-label">Form Data</div>
+                <pre>utf8: ✓
+authenticity_token: Ey_Gn3uE2ZBQ8EmyAFAMqP7vK9XcT2mLp8HgJdWk7Qs=
+session[email]: <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="4e37213b3c632b232f27220e2b362f233e222b602d2123">[email&#160;protected]</a>
+session[password]: ●●●●●●●●●●
+commit: Sign In</pre>
+
+                <div class="key-info">
+                    <div class="key-info-title">Form Field Analysis:</div>
+                    <ul>
+                        <li><code>utf8: ✓</code> - UTF-8 encoding marker (checkmark character)</li>
+                        <li><code>authenticity_token</code> - The CSRF token we found earlier ✅</li>
+                        <li><code>session[email]</code> - Matches the form field name exactly!</li>
+                        <li><code>session[password]</code> - Password field (shown as dots in DevTools for security)</li>
+                        <li><code>commit: Sign In</code> - The button text/value</li>
+                    </ul>
+                </div>
+
+                <div class="important">
+                    This tells us EXACTLY what data to send in our Node-RED flow! Every field shown here must be included in our automated POST request.
+                </div>
+            </div>
+
+            <div class="step">
+                <h3><span class="step-number">8</span>Analyze the Login Response</h3>
+                <p>Click on the <strong>Response</strong> tab to see what the server sent back.</p>
+                
+                <h4>Common Response Scenarios:</h4>
+
+                <h4>Scenario 1: HTML Redirect Page</h4>
+                <div class="code-label">HTML Response</div>
+                <pre>&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;
+  &lt;meta http-equiv="refresh" content="0; url=/users/44776746/contacts"&gt;
+  &lt;title&gt;Redirecting...&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+  &lt;p&gt;You are being redirected...&lt;/p&gt;
+&lt;/body&gt;
+&lt;/html&gt;</pre>
+
+                <p>Note the URL in the meta refresh tag: <code>/users/44776746/contacts</code> - this is where successful logins go!</p>
+
+                <h4>Scenario 2: 302 HTTP Redirect</h4>
+                <p>Look at the <strong>Response Headers</strong> section:</p>
+                
+                <div class="code-label">HTTP Response Headers</div>
+                <pre>HTTP/1.1 302 Found
+Location: https://your-school-portal.com/users/44776746/contacts
+Set-Cookie: ps_r=aGVyZV9pc19hbm90aGVyX2Nvb2tpZQ==; Path=/; Expires=...
+Set-Cookie: ps_d=eWV0X2Fub3RoZXJfY29va2ll; Path=/; Expires=...
+Set-Cookie: ps_s=dXBkYXRlZF9zZXNzaW9uX2Nvb2tpZQ==; Path=/; Expires=...</pre>
+
+                <div class="key-info">
+                    <div class="key-info-title">Critical Response Observations:</div>
+                    <ul>
+                        <li><strong>Location header:</strong> Redirects to <code>/users/XXXXXX/</code> - this URL pattern means login succeeded!</li>
+                        <li><strong>Multiple Set-Cookie:</strong> Three new cookies are being set - these are our authentication credentials!</li>
+                        <li><strong>Cookie names:</strong> <code>ps_r</code>, <code>ps_d</code>, <code>ps_s</code> - all three are needed</li>
+                        <li><strong>Expiration:</strong> These cookies are valid for extended periods (often months or years)</li>
+                    </ul>
+                </div>
+
+                <h4>How to Verify Success vs Failure:</h4>
+                <table>
+                    <tr>
+                        <th>If you see...</th>
+                        <th>It means...</th>
+                    </tr>
+                    <tr>
+                        <td>Redirect to <code>/users/</code> or <code>/contacts/</code></td>
+                        <td>✅ Login SUCCESS</td>
+                    </tr>
+                    <tr>
+                        <td>Redirect back to <code>/signin</code></td>
+                        <td>❌ Login FAILED - wrong credentials</td>
+                    </tr>
+                    <tr>
+                        <td>Error message in HTML</td>
+                        <td>❌ Login FAILED - invalid token or other error</td>
+                    </tr>
+                    <tr>
+                        <td>Multiple <code>Set-Cookie</code> headers</td>
+                        <td>✅ Authentication cookies being set</td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="step">
+                <h3><span class="step-number">9</span>Extract Authentication Cookies</h3>
+                <p>This is THE MOST IMPORTANT step! These cookies prove we're logged in and allow us to access protected pages.</p>
+                
+                <h4>Finding Cookies in the Response:</h4>
+                <ol>
+                    <li>Still in the POST /sessions request details</li>
+                    <li>Make sure you're on the <strong>Headers</strong> tab</li>
+                    <li>Scroll to the <strong>Response Headers</strong> section</li>
+                    <li>Look for ALL <code>Set-Cookie</code> entries</li>
+                </ol>
+
+                <div class="screenshot-placeholder">
+                    [Screenshot: Response Headers showing multiple Set-Cookie entries highlighted]
+                </div>
+
+                <h4>What We Found:</h4>
+                <div class="code-label">Set-Cookie Headers</div>
+                <pre>Set-Cookie: ps_s=eWJhc2U2NGVuY29kZWRkYXRh...; Path=/; Expires=Mon, 15 Feb 2027; SameSite=Lax
+Set-Cookie: ps_r=c29tZW90aGVyZGF0YQ...; Path=/; Expires=Mon, 15 Feb 2027; SameSite=Lax  
+Set-Cookie: ps_d=bW9yZWRhdGE...; Path=/; Expires=Mon, 15 Feb 2027; SameSite=Lax
+Set-Cookie: request_method=; Path=/; Max-Age=0; Expires=Thu, 01 Jan 1970</pre>
+
+                <div class="key-info">
+                    <div class="key-info-title">Cookie Analysis:</div>
+                    <ul>
+                        <li><strong>ps_s:</strong> Session cookie - the main authentication token</li>
+                        <li><strong>ps_r:</strong> Remember cookie - helps maintain long sessions</li>
+                        <li><strong>ps_d:</strong> Device cookie - tracks your device</li>
+                        <li><strong>request_method:</strong> Being cleared (Max-Age=0) - this is normal</li>
+                        <li><strong>Expiration:</strong> Valid for ~1 year - long-term authentication!</li>
+                        <li><strong>SameSite=Lax:</strong> Security setting to prevent CSRF</li>
+                    </ul>
+                </div>
+
+                <div class="important">
+                    We need ALL three cookies (ps_s, ps_r, ps_d) for subsequent authenticated requests! Missing even one cookie can cause access denied errors.
+                </div>
+
+                <h4>Cookie Format We Need to Construct:</h4>
+                <div class="code-label">Cookie Header Format</div>
+                <pre>Cookie: ps_s=VALUE1; ps_r=VALUE2; ps_d=VALUE3</pre>
+
+                <p>Notice: Just the name=value pairs, separated by semicolons and spaces. No "Path", "Expires", or other attributes!</p>
+            </div>
+
+            <div class="step">
+                <h3><span class="step-number">10</span>Verify Cookies Work for Authenticated Requests</h3>
+                <p>Let's confirm these cookies actually grant us access to protected pages.</p>
+                
+                <h4>Find the Next Request:</h4>
+                <ol>
+                    <li>Look in the Network tab for the NEXT request after POST /sessions</li>
+                    <li>It should be a GET request to a user-specific URL</li>
+                    <li>Click on it to open the details</li>
+                </ol>
+
+                <div class="screenshot-placeholder">
+                    [Screenshot: Network tab showing GET request to /users/44776746/contacts]
+                </div>
+
+                <h4>Examine Its Request Headers:</h4>
+                <div class="code-label">Request Headers</div>
+                <pre>GET https://your-school-portal.com/users/44776746/contacts HTTP/1.1
+Host: your-school-portal.com
+Cookie: ps_s=eWJhc2U2NGVuY29kZWRkYXRh...; ps_r=c29tZW90aGVyZGF0YQ...; ps_d=bW9yZWRhdGE...
+User-Agent: Mozilla/5.0...</pre>
+
+                <div class="success">
+                    Perfect! The browser automatically sent back all three authentication cookies. This proves the cookies work and grant access to protected pages.
+                </div>
+
+                <h4>Response Status Check:</h4>
+                <table>
+                    <tr>
+                        <th>Status Code</th>
+                        <th>Meaning</th>
+                    </tr>
+                    <tr>
+                        <td>200 OK</td>
+                        <td>✅ Authenticated successfully - page loaded</td>
+                    </tr>
+                    <tr>
+                        <td>302 or 30X</td>
+                        <td>⚠️ Redirect - might be redirecting to login</td>
+                    </tr>
+                    <tr>
+                        <td>401 Unauthorized</td>
+                        <td>❌ Cookies invalid or missing</td>
+                    </tr>
+                    <tr>
+                        <td>403 Forbidden</td>
+                        <td>❌ Cookies valid but access denied</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Part 3: Finding the PDF Download Links</h2>
+
+            <div class="step">
+                <h3><span class="step-number">11</span>Navigate to Menu Section</h3>
+                <p>Now that we're authenticated, let's find where the lunch menu PDFs are located.</p>
+                
+                <h4>Preparation:</h4>
+                <ol>
+                    <li>Stay in the Network tab</li>
+                    <li>Make sure <strong>Preserve log</strong> is still enabled</li>
+                    <li>Clear the log if it's getting cluttered (but keep preserve log on!)</li>
+                </ol>
+
+                <h4>Navigate:</h4>
+                <ol>
+                    <li>Look for navigation items like "Files", "Documents", "Resources", "Lunch Menu"</li>
+                    <li>Click on the menu/files section</li>
+                    <li>Watch the Network tab for new requests</li>
+                </ol>
+
+                <div class="screenshot-placeholder">
+                    [Screenshot: Portal navigation with "Files" section highlighted]
+                </div>
+
+                <h4>Look For These Request Patterns:</h4>
+                <ul>
+                    <li>URLs containing: <code>/feeds/</code>, <code>/files/</code>, <code>/documents/</code>, <code>/resources/</code></li>
+                    <li>GET requests with Type: <code>document</code> or <code>html</code></li>
+                    <li>Status: 200 OK</li>
+                </ul>
+            </div>
+
+            <div class="step">
+                <h3><span class="step-number">12</span>Inspect the Menu Page HTML</h3>
+                <p>Once you've loaded the page with lunch menus, let's examine its HTML source.</p>
+                
+                <h4>Find the Page Request:</h4>
+                <ol>
+                    <li>In Network tab, find the GET request to the menu page</li>
+                    <li>Example: <code>GET /schools/35860/feeds/files</code></li>
+                    <li>Click on it to open details</li>
+                    <li>Click the <strong>Response</strong> tab</li>
+                </ol>
+
+                <div class="screenshot-placeholder">
+                    [Screenshot: Response tab showing HTML of the menu page]
+                </div>
+
+                <h4>You'll See:</h4>
+                <p>The complete HTML source of the page, including all the links to PDF files!</p>
+
+                <div class="tip">
+                    If the HTML is minified (all on one line), you can copy it and use an online HTML formatter to make it readable. However, we'll search through it as-is.
+                </div>
+            </div>
+
+            <div class="step">
+                <h3><span class="step-number">13</span>Search for PDF Links</h3>
+                <p>Let's find all PDF links in the HTML response.</p>
+                
+                <h4>Search Process:</h4>
+                <ol>
+                    <li>In the Response tab, press <code>Ctrl+F</code></li>
+                    <li>Search for: <code>.pdf</code></li>
+                    <li>Press <code>Enter</code> or click the arrows to go through matches</li>
+                    <li>Look at the HTML around each match</li>
+                </ol>
+
+                <div class="screenshot-placeholder">
+                    [Screenshot: Response tab with search box showing ".pdf" and matches highlighted]
+                </div>
+
+                <h4>What We Discovered:</h4>
+                <div class="code-label">HTML</div>
+                <pre>&lt;a href="https://rails-parentsquare-prod.s3.amazonaws.com/feeds/BDM6L5GvTbKmVUSGyzzJ_PreK-February.pdf?response-content-disposition=inline%3Bfilename%3D%22PreK-February.pdf%22&amp;X-Amz-Expires=21600&amp;X-Amz-Date=20260215T192746Z&amp;X-Amz-Security-Token=IQoJb3JpZ2luX2VjEFsaCXVzLWVhc3QtMSJIMEY..." 
+   class="file-link"
+   target="_blank"&gt;
+  PreK-February.pdf
+&lt;/a&gt;</pre>
+
+                <div class="key-info">
+                    <div class="key-info-title">URL Analysis:</div>
+                    <ul>
+                        <li><strong>Host:</strong> <code>rails-parentsquare-prod.s3.amazonaws.com</code> - Hosted on Amazon S3</li>
+                        <li><strong>Path:</strong> <code>/feeds/BDM6L5GvTbKmVUSGyzzJ_PreK-February.pdf</code> - The actual file</li>
+                        <li><strong>Query Parameters:</strong> Long string starting with <code>?response-content-disposition=...</code></li>
+                        <li><strong>Filename Pattern:</strong> Contains "PreK" and "February" - we can search for specific months!</li>
+                    </ul>
+                </div>
+
+                <h4>Other PDFs Found:</h4>
+                <ul>
+                    <li><code>PreK-January.pdf</code></li>
+                    <li><code>PreK-March.pdf</code></li>
+                    <li><code>Grade1-February.pdf</code></li>
+                    <li><code>Grade2-February.pdf</code></li>
+                </ul>
+
+                <p>This pattern shows we can filter for our specific grade/class and month!</p>
+            </div>
+
+            <div class="step">
+                <h3><span class="step-number">14</span>Understanding AWS Signed URLs</h3>
+                <p>Those long query parameters aren't random - they're AWS S3 signed URL components.</p>
+                
+                <h4>Breaking Down the URL:</h4>
+                <div class="code-label">URL Components</div>
+                <pre>https://rails-parentsquare-prod.s3.amazonaws.com/feeds/FILE.pdf
+?response-content-disposition=inline%3Bfilename%3D%22FILE.pdf%22
+&X-Amz-Expires=21600
+&X-Amz-Date=20260215T192746Z
+&X-Amz-Algorithm=AWS4-HMAC-SHA256
+&X-Amz-Credential=ASIAQGY75TW3LKVHB5PD%2F20260215%2Fus-east-1%2Fs3%2Faws4_request
+&X-Amz-SignedHeaders=host
+&X-Amz-Security-Token=IQoJb3JpZ2luX2VjEFsaCXVzLWVhc3QtMSJIMEY...
+&X-Amz-Signature=544b49b14d2cf906874e6a57dd6b4b341a365a8df11f7c6d8a8e95b503e47e56</pre>
+
+                <h4>What Each Parameter Means:</h4>
+                <table>
+                    <tr>
+                        <th>Parameter</th>
+                        <th>Purpose</th>
+                        <th>Value in Our Case</th>
+                    </tr>
+                    <tr>
+                        <td>X-Amz-Expires</td>
+                        <td>How long URL is valid</td>
+                        <td>21600 seconds (6 hours)</td>
+                    </tr>
+                    <tr>
+                        <td>X-Amz-Date</td>
+                        <td>When URL was created</td>
+                        <td>2026-02-15 at 19:27:46 UTC</td>
+                    </tr>
+                    <tr>
+                        <td>X-Amz-Security-Token</td>
+                        <td>Temporary AWS credentials</td>
+                        <td>Long base64-encoded token</td>
+                    </tr>
+                    <tr>
+                        <td>X-Amz-Signature</td>
+                        <td>Cryptographic signature</td>
+                        <td>Hex string proving authenticity</td>
+                    </tr>
+                </table>
+
+                <div class="warning">
+                    THE PROBLEM: When we tried downloading PDFs with these signed URL parameters, we got blank PDFs! The tokens were causing authentication conflicts with our session cookies.
+                </div>
+
+                <h4>The Discovery - Base URL Works Better:</h4>
+                <p>We found that stripping everything after <code>.pdf</code> actually works!</p>
+
+                <div class="code-label">Simplified URL</div>
+                <pre>https://rails-parentsquare-prod.s3.amazonaws.com/feeds/BDM6L5GvTbKmVUSGyzzJ_PreK-February.pdf</pre>
+
+                <div class="success">
+                    When we use the base URL + our authentication cookies (from the login), we get the actual PDF file! The signed parameters were redundant and causing problems.
+                </div>
+            </div>
+
+            <div class="step">
+                <h3><span class="step-number">15</span>Test PDF Download Manually</h3>
+                <p>Before automating, let's verify we can download the PDF manually.</p>
+                
+                <h4>Method 1: Click the Link</h4>
+                <ol>
+                    <li>While still logged into the portal</li>
+                    <li>Right-click on the PDF link</li>
+                    <li>Select "Open link in new tab"</li>
+                    <li>PDF should open in browser</li>
+                </ol>
+
+                <div class="success">
+                    If the PDF opens and shows the lunch menu, we know the link works and we're properly authenticated!
+                </div>
+
+                <h4>Method 2: Copy URL and Test Clean Version</h4>
+                <ol>
+                    <li>Right-click the PDF link → "Copy link address"</li>
+                    <li>Open a new tab and paste the URL</li>
+                    <li>Manually remove everything after <code>.pdf</code> (all the query parameters)</li>
+                    <li>Press Enter</li>
+                </ol>
+
+                <div class="code-label">Before</div>
+                <pre>https://...PreK-February.pdf?response-content-disposition=...&X-Amz-Expires=...</pre>
+
+                <div class="code-label">After</div>
+                <pre>https://...PreK-February.pdf</pre>
+
+                <div class="tip">
+                    If the simplified URL works (PDF opens), you've confirmed that the signed URL parameters aren't necessary when you're already authenticated via cookies!
+                </div>
+
+                <h4>Method 3: Check Download in Network Tab</h4>
+                <ol>
+                    <li>When PDF opens, look in Network tab</li>
+                    <li>Find the GET request to the PDF URL</li>
+                    <li>Check Response Status: should be 200 OK</li>
+                    <li>Check Size: should match the PDF file size (e.g., 134 KB)</li>
+                    <li>Click Response tab and verify it starts with <code>%PDF-1.7</code></li>
+                </ol>
+
+                <div class="screenshot-placeholder">
+                    [Screenshot: Network tab showing PDF download with 200 OK status, Response tab showing %PDF-1.7 header]
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Part 4: Translating Findings to Node-RED</h2>
+
+            <p>Now that we understand how the authentication works, let's convert our discoveries into a Node-RED flow.</p>
+
+            <div class="step">
+                <h3><span class="step-number">16</span>Design the Flow Architecture</h3>
+                
+                <h4>Flow Steps:</h4>
+                <ol>
+                    <li><strong>GET /signin</strong> → Fetch the login page</li>
+                    <li><strong>Extract Token</strong> → Parse HTML for authenticity_token</li>
+                    <li><strong>POST /sessions</strong> → Submit credentials with token</li>
+                    <li><strong>Extract Cookies</strong> → Get auth cookies from redirect</li>
+                    <li><strong>GET /feeds/files</strong> → Access menu page with cookies</li>
+                    <li><strong>Parse HTML</strong> → Find PDF URLs</li>
+                    <li><strong>Clean URL</strong> → Strip query parameters</li>
+                    <li><strong>Download PDF</strong> → Use wget with cookies</li>
+                </ol>
+
+                <div class="screenshot-placeholder">
+                    [Diagram: Flow chart showing all 8 steps connected with arrows]
+                </div>
+            </div>
+
+            <div class="step">
+                <h3><span class="step-number">17</span>Node-RED Implementation - Step by Step</h3>
+                
+                <h4>Step 1: GET Signin Page</h4>
+                <div class="code-label">Function Node - "Prepare Signin"</div>
+                <pre>msg.url = 'https://your-school-portal.com/signin';
+msg.method = 'GET';
+delete msg.headers;
+delete msg.payload;
+return msg;</pre>
+
+                <p>Connect to: <strong>HTTP Request</strong> node configured for text response</p>
+
+                <h4>Step 2: Extract CSRF Token</h4>
+                <div class="code-label">Function Node - "Extract Token"</div>
+                <pre>const html = msg.payload;
+
+// Use regex to find the authenticity token
+const tokenMatch = html.match(/name="authenticity_token"[^>]*value="([^"]+)"/);
+
+if (!tokenMatch || !tokenMatch[1]) {
+    node.error('❌ CSRF token not found!');
+    return null;
+}
+
+const token = tokenMatch[1];
+node.warn('✅ Token extracted: ' + token.substring(0, 20) + '...');
+
+msg.csrfToken = token;
+return msg;</pre>
+
+                <h4>Step 3: Prepare Login POST</h4>
+                <div class="code-label">Function Node - "Prepare Login"</div>
+                <pre>const username = '<a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="0a73657f78276f676b63664a6f726b677a666f24696567">[email&#160;protected]</a>';
+const password = 'your-password';
+const token = msg.csrfToken;
+
+// Build form data exactly as browser sends it
+const formData = new URLSearchParams();
+formData.append('utf8', '✓');
+formData.append('authenticity_token', token);
+formData.append('session[email]', username);
+formData.append('session[password]', password);
+formData.append('commit', 'Sign In');
+
+msg.url = 'https://your-school-portal.com/sessions';
+msg.method = 'POST';
+msg.payload = formData.toString();
+
+// Critical headers
+msg.headers = {
+    'Content-Type': 'application/x-www-form-urlencoded',
+    'Origin': 'https://your-school-portal.com',
+    'Referer': 'https://your-school-portal.com/signin',
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+};
+
+return msg;</pre>
+
+                <div class="important">
+                    Store credentials securely! Use environment variables or Home Assistant secrets instead of hard-coding passwords.
+                </div>
+
+                <h4>Step 4: Extract Authentication Cookies</h4>
+                <div class="code-label">Function Node - "Extract Cookies"</div>
+                <pre>// Check if login was successful
+const responseUrl = msg.responseUrl || '';
+
+if (!responseUrl.includes('/users/') && !responseUrl.includes('/contacts')) {
+    node.error('❌ Login failed - redirected to: ' + responseUrl);
+    return null;
+}
+
+node.warn('✅ Login successful!');
+
+// Extract cookies from redirect
+let allCookies = [];
+if (msg.redirectList && msg.redirectList.length > 0) {
+    const redirectCookies = msg.redirectList[0].cookies || {};
+    
+    for (const [key, val] of Object.entries(redirectCookies)) {
+        const value = typeof val === 'object' ? val.value : val;
+        allCookies.push(key + '=' + encodeURIComponent(value));
+    }
+}
+
+const cookieHeader = allCookies.join('; ');
+node.warn('✅ Extracted cookies: ' + cookieHeader.substring(0, 50) + '...');
+
+// Save for later use
+msg.authCookies = cookieHeader;
+
+return msg;</pre>
+
+                <h4>Step 5: Access Menu Page</h4>
+                <div class="code-label">Function Node - "Get Menu Page"</div>
+                <pre>msg.url = 'https://your-school-portal.com/schools/YOUR_SCHOOL_ID/feeds/files';
+msg.method = 'GET';
+delete msg.payload;
+
+// Use authentication cookies
+msg.headers = {
+    'Cookie': msg.authCookies,
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+};
+
+return msg;</pre>
+
+                <h4>Step 6: Parse HTML for PDF URLs</h4>
+                <div class="code-label">Function Node - "Find PDF URLs"</div>
+                <pre>const html = msg.payload;
+
+// Find all PDF links
+const pdfPattern = /href=["'](https:\/\/.*?\.s3\.amazonaws\.com\/feeds\/[^"']*?\.pdf[^"']*?)["']/gi;
+const pdfs = [];
+let match;
+
+while ((match = pdfPattern.exec(html)) !== null) {
+    pdfs.push(match[1]);
+}
+
+if (pdfs.length === 0) {
+    node.error('❌ No PDFs found!');
+    return null;
+}
+
+node.warn('✅ Found ' + pdfs.length + ' PDFs');
+
+// Find specific month (February in this example)
+const targetMonth = 'February';
+let pdfUrl = null;
+
+for (let i = 0; i < pdfs.length; i++) {
+    if (pdfs[i].includes(targetMonth)) {
+        pdfUrl = pdfs[i];
+        break;
+    }
+}
+
+if (!pdfUrl) {
+    node.warn('⚠️ February PDF not found, using first PDF');
+    pdfUrl = pdfs[0];
+}
+
+// CRITICAL: Strip query parameters
+const cleanMatch = pdfUrl.match(/(https:\/\/[^?]+\.pdf)/);
+if (cleanMatch) {
+    pdfUrl = cleanMatch[1];
+    node.warn('✂️ Stripped signed URL parameters');
+}
+
+node.warn('📥 Target PDF: ' + pdfUrl);
+msg.pdfUrl = pdfUrl;
+
+return msg;</pre>
+
+                <h4>Step 7: Download PDF with wget</h4>
+                <div class="code-label">Function Node - "Prepare Download"</div>
+                <pre>const pdfUrl = msg.pdfUrl;
+const cookies = msg.authCookies;
+
+// Use wget via exec node - most reliable for binary files
+msg.payload = `mkdir -p /share/lunch-menu && ` +
+              `wget --header="Cookie: ${cookies}" ` +
+              `--user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" ` +
+              `-O /share/lunch-menu/menu.pdf "${pdfUrl}" && ` +
+              `ls -lh /share/lunch-menu/menu.pdf`;
+
+return msg;</pre>
+
+                <p>Connect to: <strong>Exec</strong> node (runs shell commands)</p>
+
+                <div class="tip">
+                    Why wget instead of HTTP Request node? We discovered that Node-RED's HTTP Request node was corrupting binary PDF files. Using wget via exec node solved this completely!
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Part 5: Common Pitfalls & Solutions</h2>
+
+            <div class="step">
+                <h3>Pitfall 1: "Access Denied" or Blank PDFs</h3>
+                
+                <h4>Symptoms:</h4>
+                <ul>
+                    <li>PDF downloads but file size is wrong (too small)</li>
+                    <li>PDF opens blank or shows error</li>
+                    <li>File contains HTML instead of PDF data</li>
+                </ul>
+
+                <h4>Root Cause:</h4>
+                <p>Not sending authentication cookies with the download request, so S3 returns an "Access Denied" HTML page instead of the PDF.</p>
+
+                <h4>How to Diagnose:</h4>
+                <div class="code-label">Check File Contents</div>
+                <pre>head -c 200 /share/lunch-menu/menu.pdf</pre>
+
+                <p>Should show: <code>%PDF-1.7</code> (actual PDF)</p>
+                <p>If shows: <code>&lt;!DOCTYPE html&gt;</code> (HTML error page)</p>
+
+                <h4>Solution:</h4>
+                <div class="code-label">Correct wget Command</div>
+                <pre>wget --header="Cookie: ps_s=...; ps_r=...; ps_d=..." \
+     --user-agent="Mozilla/5.0..." \
+     -O menu.pdf "https://s3-url.pdf"</pre>
+            </div>
+
+            <div class="step">
+                <h3>Pitfall 2: "CSRF Token Invalid"</h3>
+                
+                <h4>Symptoms:</h4>
+                <ul>
+                    <li>Login POST returns error</li>
+                    <li>Redirected back to /signin page</li>
+                    <li>Error message: "Invalid authenticity token"</li>
+                </ul>
+
+                <h4>Root Causes:</h4>
+                <ul>
+                    <li>Token not extracted correctly from HTML</li>
+                    <li>Token from old page load (expired)</li>
+                    <li>Token not properly included in POST data</li>
+                </ul>
+
+                <h4>Solutions:</h4>
+                <ol>
+                    <li><strong>Verify extraction:</strong> Add debug node after token extraction to see actual value</li>
+                    <li><strong>Fresh token:</strong> Always GET /signin immediately before POST /sessions</li>
+                    <li><strong>Check regex:</strong> Ensure regex pattern matches your portal's HTML</li>
+                </ol>
+
+                <div class="code-label">Debug Token</div>
+                <pre>node.warn('Token: ' + msg.csrfToken);
+// Should show long random string like: Ey_Gn3uE2ZBQ8EmyAFAMqP7vK9...</pre>
+            </div>
+
+            <div class="step">
+                <h3>Pitfall 3: Cookies Not Being Captured</h3>
+                
+                <h4>Symptoms:</h4>
+                <ul>
+                    <li>Login succeeds but next request fails</li>
+                    <li>"Not authenticated" errors on protected pages</li>
+                    <li>Redirected to login again</li>
+                </ul>
+
+                <h4>Root Cause:</h4>
+                <p>Looking for cookies in wrong location. They're in <code>msg.redirectList[0].cookies</code>, NOT in <code>msg.responseCookies</code>!</p>
+
+                <h4>Wrong:</h4>
+                <div class="code-label">❌ Incorrect Location</div>
+                <pre>const cookies = msg.responseCookies;  // Usually empty!</pre>
+
+                <h4>Correct:</h4>
+                <div class="code-label">✅ Correct Location</div>
+                <pre>const cookies = msg.redirectList[0].cookies;  // Contains auth cookies!</pre>
+
+                <h4>Debug:</h4>
+                <div class="code-label">Inspect redirectList</div>
+                <pre>node.warn('redirectList: ' + JSON.stringify(msg.redirectList, null, 2));</pre>
+            </div>
+
+            <div class="step">
+                <h3>Pitfall 4: PDF File Corruption</h3>
+                
+                <h4>Symptoms:</h4>
+                <ul>
+                    <li>File size slightly wrong (e.g., 131KB instead of 137KB)</li>
+                    <li>PDF won't open or shows errors</li>
+                    <li>Binary data looks corrupted</li>
+                </ul>
+
+                <h4>Root Cause:</h4>
+                <p>Node-RED's File node or HTTP Request node converting binary buffer to string, losing data in the process.</p>
+
+                <h4>Solution:</h4>
+                <p>Use <code>exec</code> node with <code>wget</code> command instead of HTTP Request + File nodes.</p>
+
+                <div class="code-label">✅ Reliable Method</div>
+                <pre>wget -O /path/to/file.pdf "https://url"</pre>
+
+                <p>wget is designed for downloading files and handles binary data perfectly.</p>
+            </div>
+
+            <div class="step">
+                <h3>Pitfall 5: Signed URLs Causing Issues</h3>
+                
+                <h4>Symptoms:</h4>
+                <ul>
+                    <li>Downloads work sometimes but fail randomly</li>
+                    <li>PDFs are blank even though authentication works</li>
+                    <li>Different results when testing manually vs automated</li>
+                </ul>
+
+                <h4>Root Cause:</h4>
+                <p>AWS signed URL parameters (<code>X-Amz-*</code>) conflicting with session cookie authentication.</p>
+
+                <h4>Solution:</h4>
+                <p>Strip everything after <code>.pdf</code> in the URL:</p>
+
+                <div class="code-label">JavaScript (in Function Node)</div>
+                <pre>// Original URL with signed parameters
+let url = "https://...file.pdf?response-content-disposition=...&X-Amz-Expires=...";
+
+// Extract just the base URL
+const match = url.match(/(https:\/\/[^?]+\.pdf)/);
+if (match) {
+    url = match[1];  // Now: "https://...file.pdf"
+}</pre>
+
+                <p>Then use authentication cookies instead of signed URL for access.</p>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Part 6: Verification & Testing</h2>
+
+            <div class="step">
+                <h3>Testing Each Stage Independently</h3>
+                
+                <h4>Test 1: Signin Page</h4>
+                <div class="code-label">Using curl</div>
+                <pre>curl -v https://your-school-portal.com/signin</pre>
+
+                <p><strong>Look for:</strong></p>
+                <ul>
+                    <li>HTTP 200 OK status</li>
+                    <li>HTML response containing <code>authenticity_token</code></li>
+                    <li>Set-Cookie header (initial session cookie)</li>
+                </ul>
+
+                <h4>Test 2: Token Extraction</h4>
+                <div class="code-label">Using grep</div>
+                <pre>curl -s https://your-school-portal.com/signin | grep authenticity_token</pre>
+
+                <p><strong>Should output:</strong><br>
+                <code>&lt;input type="hidden" name="authenticity_token" value="..."&gt;</code></p>
+
+                <h4>Test 3: Login POST</h4>
+                <div class="code-label">Using curl with form data</div>
+                <pre>curl -v -X POST https://your-school-portal.com/sessions \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "utf8=✓&authenticity_token=TOKEN&session[email]=EMAIL&session[password]=PASS&commit=Sign+In"</pre>
+
+                <p><strong>Look for:</strong></p>
+                <ul>
+                    <li>HTTP 302 redirect</li>
+                    <li>Location header pointing to /users/ or /contacts</li>
+                    <li>Multiple Set-Cookie headers (ps_s, ps_r, ps_d)</li>
+                </ul>
+
+                <h4>Test 4: Authenticated Request</h4>
+                <div class="code-label">Using curl with cookies</div>
+                <pre>curl -v https://your-school-portal.com/schools/XXXXX/feeds/files \
+  -H "Cookie: ps_s=...; ps_r=...; ps_d=..."</pre>
+
+                <p><strong>Look for:</strong></p>
+                <ul>
+                    <li>HTTP 200 OK</li>
+                    <li>HTML containing PDF links</li>
+                    <li>NOT redirected to /signin</li>
+                </ul>
+
+                <h4>Test 5: PDF Download</h4>
+                <div class="code-label">Using wget with cookies</div>
+                <pre>wget --header="Cookie: ps_s=...; ps_r=...; ps_d=..." \
+     -O test.pdf \
+     "https://s3-url.pdf"</pre>
+
+                <p><strong>Verify result:</strong></p>
+                <div class="code-label">Check file type</div>
+                <pre>file test.pdf
+# Should say: "PDF document, version 1.7"
+
+head -c 8 test.pdf
+# Should show: %PDF-1.7</pre>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Appendix: Quick Reference</h2>
+
+            <h3>Browser DevTools Shortcuts</h3>
+            <table>
+                <tr>
+                    <th>Action</th>
+                    <th>Windows/Linux</th>
+                    <th>Mac</th>
+                </tr>
+                <tr>
+                    <td>Open DevTools</td>
+                    <td>F12 or Ctrl+Shift+I</td>
+                    <td>Cmd+Option+I</td>
+                </tr>
+                <tr>
+                    <td>Network tab</td>
+                    <td>Ctrl+Shift+E</td>
+                    <td>Cmd+Option+E</td>
+                </tr>
+                <tr>
+                    <td>Elements tab</td>
+                    <td>Ctrl+Shift+C</td>
+                    <td>Cmd+Option+C</td>
+                </tr>
+                <tr>
+                    <td>Console tab</td>
+                    <td>Ctrl+Shift+J</td>
+                    <td>Cmd+Option+J</td>
+                </tr>
+                <tr>
+                    <td>Search in page</td>
+                    <td>Ctrl+F</td>
+                    <td>Cmd+F</td>
+                </tr>
+                <tr>
+                    <td>Clear network log</td>
+                    <td>Ctrl+E</td>
+                    <td>Cmd+E</td>
+                </tr>
+            </table>
+
+            <h3>Regular Expression Patterns</h3>
+            <table>
+                <tr>
+                    <th>Purpose</th>
+                    <th>Pattern</th>
+                </tr>
+                <tr>
+                    <td>Extract CSRF token</td>
+                    <td><code>/name="authenticity_token"[^&gt;]*value="([^"]+)"/</code></td>
+                </tr>
+                <tr>
+                    <td>Find PDF links</td>
+                    <td><code>/href=["'](https:\/\/.*?\.pdf[^"']*?)["']/gi</code></td>
+                </tr>
+                <tr>
+                    <td>Strip query parameters</td>
+                    <td><code>/(https:\/\/[^?]+\.pdf)/</code></td>
+                </tr>
+                <tr>
+                    <td>Find email in HTML</td>
+                    <td><code>/name="session\[email\]"/</code></td>
+                </tr>
+            </table>
+
+            <h3>HTTP Status Codes</h3>
+            <table>
+                <tr>
+                    <th>Code</th>
+                    <th>Meaning</th>
+                    <th>What to do</th>
+                </tr>
+                <tr>
+                    <td>200 OK</td>
+                    <td>Success</td>
+                    <td>✅ Continue</td>
+                </tr>
+                <tr>
+                    <td>302 Found</td>
+                    <td>Redirect</td>
+                    <td>✅ Check Location header</td>
+                </tr>
+                <tr>
+                    <td>401 Unauthorized</td>
+                    <td>Not authenticated</td>
+                    <td>❌ Check cookies</td>
+                </tr>
+                <tr>
+                    <td>403 Forbidden</td>
+                    <td>Access denied</td>
+                    <td>❌ Check permissions</td>
+                </tr>
+                <tr>
+                    <td>404 Not Found</td>
+                    <td>URL doesn't exist</td>
+                    <td>❌ Check URL</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="section" style="background: #ecf0f1; padding: 30px; border-radius: 5px; margin-top: 50px;">
+            <h2>Conclusion</h2>
+            <p>Through careful inspection of browser network traffic and HTML source, we successfully reverse-engineered a complete authentication flow. The key discoveries were:</p>
+            
+            <ol>
+                <li><strong>Login Flow:</strong> GET signin → Extract token → POST credentials → Extract cookies</li>
+                <li><strong>Form Fields:</strong> <code>session[email]</code>, <code>session[password]</code>, <code>authenticity_token</code></li>
+                <li><strong>Cookie Handling:</strong> Multiple cookies from redirect response required for authentication</li>
+                <li><strong>PDF Location:</strong> S3 URLs with signed parameters that needed to be stripped</li>
+                <li><strong>Download Solution:</strong> Use wget with authentication cookies for reliable bina

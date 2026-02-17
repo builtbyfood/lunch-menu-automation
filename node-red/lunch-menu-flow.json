@@ -1,0 +1,295 @@
+[
+  {
+    "id": "lunch_final",
+    "type": "tab",
+    "label": "Lunch Menu - FINAL",
+    "disabled": false,
+    "info": "Complete working flow with Home Assistant integration"
+  },
+  {
+    "id": "trigger_manual",
+    "type": "inject",
+    "z": "lunch_final",
+    "name": "Manual Update",
+    "props": [
+      {
+        "p": "payload"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "topic": "",
+    "payload": "",
+    "payloadType": "date",
+    "x": 140,
+    "y": 100,
+    "wires": [
+      [
+        "load_credentials"
+      ]
+    ]
+  },
+  {
+    "id": "trigger_monthly",
+    "type": "inject",
+    "z": "lunch_final",
+    "name": "1st of Month 6am",
+    "props": [
+      {
+        "p": "payload"
+      }
+    ],
+    "repeat": "",
+    "crontab": "00 06 01 * *",
+    "once": false,
+    "topic": "",
+    "payload": "",
+    "payloadType": "date",
+    "x": 140,
+    "y": 60,
+    "wires": [
+      [
+        "load_credentials"
+      ]
+    ]
+  },
+  {
+    "id": "load_credentials",
+    "type": "function",
+    "z": "lunch_final",
+    "name": "Load Credentials",
+    "func": "const username = 'your-email@example.com';\nconst password = 'YOUR_PASSWORD_HERE';\n\nif (password === 'YOUR_PASSWORD_HERE') {\n    node.error('\u274c UPDATE PASSWORD!');\n    return null;\n}\n\nmsg.credentials = { username, password };\n\nconst monthNames = [\"January\", \"February\", \"March\", \"April\", \"May\", \"June\",\n                    \"July\", \"August\", \"September\", \"October\", \"November\", \"December\"];\nmsg.targetFilename = \"PreK-\" + monthNames[new Date().getMonth()] + \".pdf\";\n\nnode.warn(\"\ud83d\ude80 Starting download for \" + msg.targetFilename);\nreturn msg;",
+    "outputs": 1,
+    "x": 360,
+    "y": 80,
+    "wires": [
+      [
+        "prepare_signin"
+      ]
+    ]
+  },
+  {
+    "id": "prepare_signin",
+    "type": "function",
+    "z": "lunch_final",
+    "name": "Prepare Signin",
+    "func": "msg.url = 'https://www.your-school-portal.com/signin';\nmsg.method = 'GET';\ndelete msg.headers;\ndelete msg.payload;\nreturn msg;",
+    "outputs": 1,
+    "x": 560,
+    "y": 80,
+    "wires": [
+      [
+        "http_signin"
+      ]
+    ]
+  },
+  {
+    "id": "http_signin",
+    "type": "http request",
+    "z": "lunch_final",
+    "name": "HTTP: Get Signin",
+    "method": "use",
+    "ret": "txt",
+    "paytoqs": "ignore",
+    "url": "",
+    "tls": "",
+    "persist": true,
+    "proxy": "",
+    "insecureHTTPParser": false,
+    "authType": "",
+    "senderr": false,
+    "headers": [],
+    "x": 750,
+    "y": 80,
+    "wires": [
+      [
+        "extract_and_login"
+      ]
+    ]
+  },
+  {
+    "id": "extract_and_login",
+    "type": "function",
+    "z": "lunch_final",
+    "name": "Extract & Login",
+    "func": "const html = msg.payload;\n\nconst tokenMatch = html.match(/name=\"authenticity_token\"[^>]*value=\"([^\"]+)\"/);\nif (!tokenMatch || !tokenMatch[1]) {\n    node.error('\u274c No token!');\n    return null;\n}\n\nconst token = tokenMatch[1];\nconst signinCookies = msg.responseCookies || {};\n\nconst formData = new URLSearchParams();\nformData.append('utf8', '\u2713');\nformData.append('authenticity_token', token);\nformData.append('session[email]', msg.credentials.username);\nformData.append('session[password]', msg.credentials.password);\nformData.append('commit', 'Sign In');\n\nmsg.url = 'https://www.your-school-portal.com/sessions';\nmsg.method = 'POST';\nmsg.payload = formData.toString();\n\nconst cookieValue = signinCookies.ps_s ? signinCookies.ps_s.value : null;\nmsg.headers = {\n    'Content-Type': 'application/x-www-form-urlencoded',\n    'Origin': 'https://www.your-school-portal.com',\n    'Referer': 'https://www.your-school-portal.com/signin',\n    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'\n};\n\nif (cookieValue) {\n    msg.headers['Cookie'] = 'ps_s=' + encodeURIComponent(cookieValue);\n}\n\nreturn msg;",
+    "outputs": 1,
+    "x": 960,
+    "y": 80,
+    "wires": [
+      [
+        "http_login"
+      ]
+    ]
+  },
+  {
+    "id": "http_login",
+    "type": "http request",
+    "z": "lunch_final",
+    "name": "HTTP: Post Login",
+    "method": "use",
+    "ret": "txt",
+    "paytoqs": "ignore",
+    "url": "",
+    "tls": "",
+    "persist": true,
+    "proxy": "",
+    "insecureHTTPParser": false,
+    "authType": "",
+    "senderr": false,
+    "headers": [],
+    "x": 140,
+    "y": 180,
+    "wires": [
+      [
+        "validate_login"
+      ]
+    ]
+  },
+  {
+    "id": "validate_login",
+    "type": "function",
+    "z": "lunch_final",
+    "name": "Validate Login",
+    "func": "const responseUrl = msg.responseUrl || '';\n\nif (!responseUrl.includes('/users/') && !responseUrl.includes('/contacts')) {\n    node.error('\u274c Login failed!');\n    return null;\n}\n\nlet allCookies = [];\nif (msg.redirectList && msg.redirectList.length > 0) {\n    const redirectCookies = msg.redirectList[0].cookies || {};\n    for (const [key, val] of Object.entries(redirectCookies)) {\n        const v = typeof val === 'object' ? val.value : val;\n        allCookies.push(key + '=' + encodeURIComponent(v));\n    }\n}\n\nconst cookieHeader = allCookies.join('; ');\nmsg.authCookies = cookieHeader;\n\nmsg.url = 'https://www.your-school-portal.com/schools/YOUR_SCHOOL_ID/feeds/files';\nmsg.method = 'GET';\ndelete msg.payload;\n\nmsg.headers = {\n    'Cookie': cookieHeader,\n    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'\n};\n\nreturn msg;",
+    "outputs": 1,
+    "x": 360,
+    "y": 180,
+    "wires": [
+      [
+        "http_menu"
+      ]
+    ]
+  },
+  {
+    "id": "http_menu",
+    "type": "http request",
+    "z": "lunch_final",
+    "name": "HTTP: Get Menu",
+    "method": "use",
+    "ret": "txt",
+    "paytoqs": "ignore",
+    "url": "",
+    "tls": "",
+    "persist": true,
+    "proxy": "",
+    "insecureHTTPParser": false,
+    "authType": "",
+    "senderr": false,
+    "headers": [],
+    "x": 560,
+    "y": 180,
+    "wires": [
+      [
+        "parse_menu"
+      ]
+    ]
+  },
+  {
+    "id": "parse_menu",
+    "type": "function",
+    "z": "lunch_final",
+    "name": "Parse Menu",
+    "func": "const html = msg.payload;\nconst targetFilename = msg.targetFilename;\n\nif (html.includes('\"signedIn\":false')) {\n    node.error('\u274c Not authenticated!');\n    return null;\n}\n\nconst pdfPattern = /href=[\"'](https:\\/\\/rails-parentsquare-prod\\.s3\\.amazonaws\\.com\\/feeds\\/[^\"']*\\.pdf[^\"']*?)[\"']/gi;\nconst pdfs = [];\nlet match;\n\nwhile ((match = pdfPattern.exec(html)) !== null) {\n    pdfs.push(match[1]);\n}\n\nif (pdfs.length === 0) {\n    node.error('\u274c No PDFs found!');\n    return null;\n}\n\nlet pdfUrl = null;\nconst searchName = targetFilename.replace(' ', '%20');\n\nfor (let i = 0; i < pdfs.length; i++) {\n    if (pdfs[i].includes(searchName)) {\n        pdfUrl = pdfs[i];\n        break;\n    }\n}\n\nif (!pdfUrl) {\n    pdfUrl = pdfs[0];\n}\n\npdfUrl = pdfUrl.replace(/&amp;/g, '&');\n\n// CRITICAL: Strip query parameters (signed URL tokens cause blank PDFs!)\nconst pdfMatch = pdfUrl.match(/(https:\\/\\/[^?]+\\.pdf)/);\nif (pdfMatch) {\n    pdfUrl = pdfMatch[1];\n    node.warn(\"\u2702\ufe0f Stripped tokens from URL\");\n}\n\nnode.warn(\"\ud83d\udce5 Clean URL: \" + pdfUrl);\nmsg.pdfUrl = pdfUrl;\n\nreturn msg;",
+    "outputs": 1,
+    "x": 750,
+    "y": 180,
+    "wires": [
+      [
+        "download_wget"
+      ]
+    ]
+  },
+  {
+    "id": "download_wget",
+    "type": "function",
+    "z": "lunch_final",
+    "name": "Download with wget",
+    "func": "const pdfUrl = msg.pdfUrl;\nconst cookies = msg.authCookies;\n\nnode.warn(\"\ud83c\udf10 Downloading to /share...\");\n\n// Download to /share - Home Assistant will copy it via automation\nmsg.payload = `mkdir -p /share/lunch-menu && ` +\n              `wget --header=\"Cookie: ${cookies}\" ` +\n              `--user-agent=\"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36\" ` +\n              `-O /share/lunch-menu/menu.pdf \"${pdfUrl}\" && ` +\n              `echo \"\u2705 Downloaded successfully\" && ` +\n              `ls -lh /share/lunch-menu/menu.pdf`;\n\nreturn msg;",
+    "outputs": 1,
+    "x": 960,
+    "y": 180,
+    "wires": [
+      [
+        "exec_wget"
+      ]
+    ]
+  },
+  {
+    "id": "exec_wget",
+    "type": "exec",
+    "z": "lunch_final",
+    "command": "",
+    "addpay": "payload",
+    "append": "",
+    "useSpawn": "false",
+    "timer": "30",
+    "winHide": false,
+    "oldrc": false,
+    "name": "Exec: wget",
+    "x": 140,
+    "y": 280,
+    "wires": [
+      [
+        "trigger_ha"
+      ],
+      [],
+      []
+    ]
+  },
+  {
+    "id": "trigger_ha",
+    "type": "function",
+    "z": "lunch_final",
+    "name": "Trigger HA Webhook",
+    "func": "msg.url = 'http://homeassistant:8123/api/webhook/lunch_menu_downloaded';\nmsg.method = 'POST';\nmsg.payload = {\n    timestamp: new Date().toISOString(),\n    status: 'success'\n};\n\nnode.warn(\"\ud83d\udce2 Triggering Home Assistant to copy file...\");\n\nreturn msg;",
+    "outputs": 1,
+    "x": 360,
+    "y": 280,
+    "wires": [
+      [
+        "http_webhook"
+      ]
+    ]
+  },
+  {
+    "id": "http_webhook",
+    "type": "http request",
+    "z": "lunch_final",
+    "name": "HTTP: Webhook",
+    "method": "use",
+    "ret": "txt",
+    "paytoqs": "ignore",
+    "url": "",
+    "tls": "",
+    "persist": false,
+    "proxy": "",
+    "insecureHTTPParser": false,
+    "authType": "",
+    "senderr": false,
+    "headers": [],
+    "x": 570,
+    "y": 280,
+    "wires": [
+      [
+        "debug_success"
+      ]
+    ]
+  },
+  {
+    "id": "debug_success",
+    "type": "debug",
+    "z": "lunch_final",
+    "name": "\u2705 SUCCESS!",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "true",
+    "targetType": "full",
+    "x": 770,
+    "y": 280,
+    "wires": []
+  }
+]

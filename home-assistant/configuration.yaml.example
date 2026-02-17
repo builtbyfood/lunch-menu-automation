@@ -1,0 +1,21 @@
+# Home Assistant Configuration Example
+# File: configuration.yaml
+
+# Shell command to copy PDF from shared folder to www folder
+shell_command:
+  copy_lunch_menu: "cp /share/lunch-menu/menu.pdf /config/www/lunch-menu/menu.pdf"
+
+# Panel iframe to display dashboard in sidebar
+panel_iframe:
+  lunch_menu:
+    title: "Lunch Menu"
+    icon: mdi:food-apple
+    url: "/local/lunch-menu/dashboard.html"
+    # require_admin: false  # Set to true if you want admin-only access
+
+# Uncomment to use secrets file (recommended!)
+# panel_iframe:
+#   lunch_menu:
+#     title: "Lunch Menu"
+#     icon: mdi:food-apple
+#     url: !secret lunch_menu_url

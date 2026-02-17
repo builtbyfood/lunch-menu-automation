@@ -1,0 +1,120 @@
+# Lunch Menu Automation - .gitignore
+
+# Sensitive Data - NEVER COMMIT THESE
+secrets.yaml
+secrets.yml
+*.secret
+*.key
+.env
+.env.local
+
+# Credentials
+*password*
+*credentials*
+auth_tokens.txt
+
+# Personal Information
+*_personal.json
+*_private.*
+
+# Home Assistant
+home-assistant.log
+home-assistant_v2.db
+.storage/
+.cloud/
+deps/
+tts/
+.google.token
+
+# Node-RED
+flows_cred.json
+.config.json
+settings.js
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv
+
+# Node
+node_modules/
+npm-debug.log
+yarn-error.log
+package-lock.json
+yarn.lock
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Temporary Files
+*.tmp
+*.temp
+*.log
+*.cache
+
+# Build/Distribution
+dist/
+build/
+*.egg-info/
+
+# Documentation Build
+docs/_build/
+docs/.doctrees/
+
+# Test Files
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Backups
+*.bak
+*.backup
+*~
+
+# OS Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Large Media (if any)
+*.mp4
+*.avi
+*.mov
+*.wmv
+
+# Compiled Files
+*.com
+*.class
+*.dll
+*.exe
+*.o
+*.so
+
+# Actual PDFs (keep example only)
+lunch-menu/*.pdf
+!lunch-menu/example-menu.pdf
+
+# Screenshots with Sensitive Data
+screenshots/*actual*
+screenshots/*real*
+screenshots/*live*
+
+# Keep Placeholders
+!screenshots/*-placeholder.png
+!screenshots/README.md

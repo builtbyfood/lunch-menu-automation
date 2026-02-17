@@ -1,0 +1,62 @@
+# Home Assistant Automations Example
+# File: automations.yaml
+
+# Automation to copy lunch menu PDF after Node-RED downloads it
+- id: copy_lunch_menu_after_download
+  alias: "Copy Lunch Menu to WWW"
+  description: "Triggered by Node-RED webhook after PDF download completes"
+  
+  trigger:
+    - platform: webhook
+      webhook_id: lunch_menu_downloaded
+      # This webhook is called by Node-RED after successful download
+      # URL: http://homeassistant:8123/api/webhook/lunch_menu_downloaded
+  
+  condition: []
+  
+  action:
+    # Copy the PDF from /share to /config/www for web access
+    - service: shell_command.copy_lunch_menu
+    
+    # Wait a moment to ensure copy completes
+    - delay:
+        seconds: 2
+    
+    # Send notification that menu was updated
+    - service: persistent_notification.create
+      data:
+        title: "📄 Lunch Menu Updated"
+        message: "The {{ now().strftime('%B') }} lunch menu is now available!"
+        notification_id: "lunch_menu_update"
+    
+    # Optional: Send mobile notification (requires mobile_app integration)
+    # - service: notify.mobile_app_your_phone
+    #   data:
+    #     title: "Lunch Menu Updated"
+    #     message: "New menu for {{ now().strftime('%B') }} is ready!"
+
+  mode: single
+
+# Optional: Alternative time-based automation if webhook doesn't work
+# This runs 6 minutes after the scheduled Node-RED download time
+# - id: copy_lunch_menu_scheduled
+#   alias: "Copy Lunch Menu (Scheduled)"
+#   description: "Backup method to copy menu at scheduled time"
+#   
+#   trigger:
+#     - platform: time
+#       at: "06:06:00"  # 6 minutes after Node-RED runs at 06:00
+#   
+#   condition:
+#     # Only run on 1st of month
+#     - condition: template
+#       value_template: "{{ now().day == 1 }}"
+#   
+#   action:
+#     - service: shell_command.copy_lunch_menu
+#     - service: persistent_notification.create
+#       data:
+#         title: "📄 Lunch Menu Updated"
+#         message: "Monthly menu has been updated"
+#   
+#   mode: single
