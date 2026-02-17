@@ -75,14 +75,14 @@ const password = 'your_password';   // Your school portal password
 
 Double-click "Validate Login" node and find this line:
 ```javascript
-msg.url = 'https://www.your-school-portal.com/schools/35860/feeds/files';
+msg.url = 'https://www.your-school-portal.com/schools/id/feeds/files';
                                                     ^^^^^
                                             Your school ID here
 ```
 
 To find your school ID:
 1. Log into school portal
-2. Look at URL: `https://www.your-school-portal.com/schools/12345/...`
+2. Look at URL: `https://www.your-school-portal.com/schools/id/...`
 3. That number is your school ID!
 
 **Click "Deploy"**
