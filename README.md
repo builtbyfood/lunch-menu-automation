@@ -426,10 +426,3 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [ ] Shopping list integration
 - [ ] Mobile app
 
----
-
-## ⭐ Star History
-
-If this project helped you, please consider giving it a star!
-
-[![Star History Chart](https://api.star-history.com/svg?repos=YOUR_USERNAME/lunch-menu-automation&type=Date)](https://star-history.com/#YOUR_USERNAME/lunch-menu-automation&Date)
