@@ -131,7 +131,7 @@ Watch the debug panel (right side) for progress messages:
 In **Load Credentials** node, modify:
 
 ```javascript
-msg.targetFilename = "PreK-" + monthNames[new Date().getMonth()] + ".pdf";
+msg.targetFilename = "Grade -" + monthNames[new Date().getMonth()] + ".pdf";
                      ^^^^^^
                      Change to your grade/class
 ```
@@ -205,9 +205,9 @@ head -c 8 /share/lunch-menu/menu.pdf
 **Expected output when working:**
 
 ```
-🚀 Starting download for PreK-February.pdf
+🚀 Starting download for February.pdf
 ✂️ Stripped tokens from URL
-📥 Clean URL: https://s3.amazonaws.com/.../PreK-February.pdf
+📥 Clean URL: https://s3.amazonaws.com/.../February.pdf
 🌐 Downloading to /share...
 ✅ Downloaded successfully
 📢 Triggering Home Assistant to copy file...
