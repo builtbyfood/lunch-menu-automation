@@ -292,7 +292,7 @@ Now that we're logged in, let's find where the lunch menu PDFs are.
 **What we found:**
 
 ```html
-<a href="https://rails-parentsquare-prod.s3.amazonaws.com/feeds/BDM6L5GvTbKmVUSGyzzJ_PreK-February.pdf?response-content-disposition=inline%3Bfilename%3D%22PreK-February.pdf%22&amp;X-Amz-Expires=21600&amp;X-Amz-Date=20260215T192746Z&amp;X-Amz-Security-Token=IQoJb3JpZ2luX2VjEFsa...">
+<a href="https://app-school-env.bucket.amazonaws.com/folder/February.pdf?response-content-disposition=inline%3Bfilename%3D%22PreK-February.pdf%22&amp;X-Amz-Expires=21600&amp;X-Amz-Date=20260215T192746Z&amp;X-Amz-Security-Token=IQoJb3JpZ2luX2VjEFsa...">
   PreK-February.pdf
 </a>
 ```
@@ -322,7 +322,7 @@ When we tried downloading with these parameters, we got blank PDFs!
 We discovered that stripping everything after `.pdf` works better:
 
 ```
-https://rails-parentsquare-prod.s3.amazonaws.com/feeds/BDM6L5GvTbKmVUSGyzzJ_PreK-February.pdf
+https://app-school-penv.bucket.amazonaws.com/folder/February.pdf
 ```
 
 **Why?** The signed tokens were causing authentication issues. The base URL + authentication cookies is sufficient!
@@ -394,7 +394,7 @@ msg.headers = {
 const html = msg.payload;
 
 // Find all PDF links
-const pdfPattern = /href=["'](https:\/\/rails-parentsquare-prod\.s3\.amazonaws\.com\/feeds\/[^"']*\.pdf[^"']*?)["']/gi;
+const pdfPattern = /href=["'](https:\/\/app-school-env\.bucket\.amazonaws\.com\/folder\/[^"']*\.pdf[^"']*?)["']/gi;
 const pdfs = [];
 let match;
 
