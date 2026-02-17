@@ -275,7 +275,7 @@ Covers:
 
 **Also available as:**
 - [HTML Version](docs/technical-deep-dive.html) - Styled, print-friendly
-- [Word Document](docs/Technical-Deep-Dive.docx) - Fully editable
+- [Word Document](docs/technical-deep-dive.pdf) - Fully editable
 
 ---
 
